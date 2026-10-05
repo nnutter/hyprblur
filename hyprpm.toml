@@ -1,0 +1,12 @@
+[repository]
+name = "hyprblur"
+authors = ["Nathan Nutter"]
+
+[hyprblur]
+description = "Blur a window a moment after it loses focus, fading the blur in"
+authors = ["Nathan Nutter"]
+output = "build/hyprblur.so"
+build = [
+  "cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE:STRING=Release -S . -B ./build",
+  "cmake --build ./build --config Release",
+]
