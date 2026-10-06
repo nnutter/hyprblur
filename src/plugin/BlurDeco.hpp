@@ -34,7 +34,8 @@ class CBlurDeco : public IHyprWindowDecoration {
 
     void                               renderPass(PHLMONITOR monitor, float amount);
 
-    CBox                               windowBoxOnMonitor(PHLMONITOR monitor);
+    // Monitor-local logical coordinates, as required by pass boundingBox().
+    CBox windowBoxOnMonitor(PHLMONITOR monitor);
 
   private:
     PHLWINDOWREF m_window;

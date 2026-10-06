@@ -1,8 +1,8 @@
 # hyprblur
 
 Blur a window a moment after it loses focus.
-Focused windows and the window under the pointer stay clear; blurred windows fade
-into the background until you come back to it.
+The active window stays clear, while inactive windows fade into the background.
+Blur follows Hyprland's window focus, not the pointer position.
 
 ## Install
 
@@ -18,9 +18,14 @@ hyprpm enable hyprblur
 Add this key binding to your Lua configuration after the plugin loads to toggle blurring for the focused window:
 
 ```lua
-if hl.plugin and hl.plugin.hyprblur and hl.plugin.hyprblur.toggle then
-  hl.bind("SUPER + B", hl.plugin.hyprblur.toggle)
-end
+-- Bind unconditionally with a runtime guard. The key does nothing when the
+-- plugin is missing or disabled, and it starts working as soon as the
+-- plugin loads, with no reload race.
+hl.bind("SUPER + ALT + B", function()
+  if hl.plugin and hl.plugin.hyprblur and hl.plugin.hyprblur.toggle then
+    hl.plugin.hyprblur.toggle()
+  end
+end)
 ```
 
 ## Lua Config
@@ -38,7 +43,7 @@ hl.config({
       focus_lost_delay_ms = 300,
       fade_rate_percent_per_ms = 0.1,
       blur_strength       = 0.90,
-      suppress_on_hover   = true,
+      suppress_on_hover   = false,
       ensure_global_blur  = true,
     },
   },
@@ -59,11 +64,14 @@ Fade and enable settings apply on every frame, so reloading the config takes eff
 | `focus_lost_delay_ms`| `300`   | Wait after losing focus before the fade starts.             |
 | `fade_rate_percent_per_ms` | `0.1` | Percentage points of blur added per ms; must be positive. |
 | `blur_strength`      | `0.90`  | Final blur amount from `0` (clear) to `1` (full).           |
-| `suppress_on_hover`  | `true`  | Keep a window clear while the pointer is over it.           |
+| `suppress_on_hover`  | `false` | Also keep an inactive window clear while the pointer is over it. |
 | `ensure_global_blur` | `true`  | Turn on global blur after each config reload if it is off.                   |
 
 
 The blur itself comes from your normal `decoration.blur` settings; the strength above only decides how much of it shows through.
+
+By default, an inactive window can blur even if the pointer remains over it when another app gains focus.
+Set `suppress_on_hover = true` to restore the previous hover behavior.
 
 ## Automatically blur windows
 
@@ -80,7 +88,15 @@ Run `hyprctl clients` to find Signal's `class`.
 Add configuration, similar to the following, after the plugin loads to opt Signal windows into blur without enabling it for other apps,
 
 ```lua
-if hl.plugin and hl.plugin.hyprblur and hl.plugin.hyprblur.blue_class then
+local function hyprblur_available()
+  return hl.plugin and hl.plugin.hyprblur and hl.plugin.hyprblur.toggle
+end
+
+local function apply_hyprblur()
+  if not hyprblur_available() then
+    return
+  end
+
   hl.config({
     plugin = {
       hyprblur = {
@@ -89,6 +105,13 @@ if hl.plugin and hl.plugin.hyprblur and hl.plugin.hyprblur.blue_class then
     },
   })
 end
+
+-- Run now, and retry after (re)load. The plugin loader triggers
+-- config.reloaded after PLUGIN_INIT, so a late-loading plugin still
+-- gets the setting. The guard keeps a disabled plugin error-free.
+apply_hyprblur()
+hl.on("config.reloaded", apply_hyprblur)
+hl.on("hyprland.start", apply_hyprblur)
 ```
 
 ## Development
