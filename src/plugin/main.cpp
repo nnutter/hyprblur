@@ -190,7 +190,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     g_pGlobalState->config.blurTitle = Hyprutils::Memory::makeShared<Config::Values::CStringValue>(
         "plugin:hyprblur:blur_title", "Initially blur windows whose title matches this regex", "", Config::Values::SStringValueOptions{.validator = validateWindowRule});
     g_pGlobalState->config.suppressOnHover =
-        Hyprutils::Memory::makeShared<Config::Values::CBoolValue>("plugin:hyprblur:suppress_on_hover", "Keep a window clear while the pointer hovers over it", true);
+        Hyprutils::Memory::makeShared<Config::Values::CBoolValue>("plugin:hyprblur:suppress_on_hover", "Keep a window clear while the pointer hovers over it", false);
     g_pGlobalState->config.ensureGlobalBlur =
         Hyprutils::Memory::makeShared<Config::Values::CBoolValue>("plugin:hyprblur:ensure_global_blur", "Ensure global blur is on after each config reload", true);
     g_pGlobalState->config.focusLostDelayMs = Hyprutils::Memory::makeShared<Config::Values::CIntValue>(

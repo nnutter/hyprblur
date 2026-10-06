@@ -1,8 +1,8 @@
 # hyprblur
 
 Blur a window a moment after it loses focus.
-Focused windows and the window under the pointer stay clear; blurred windows fade
-into the background until you come back to it.
+The active window stays clear, while inactive windows fade into the background.
+Blur follows Hyprland's window focus, not the pointer position.
 
 ## Install
 
@@ -38,7 +38,7 @@ hl.config({
       focus_lost_delay_ms = 300,
       fade_rate_percent_per_ms = 0.1,
       blur_strength       = 0.90,
-      suppress_on_hover   = true,
+      suppress_on_hover   = false,
       ensure_global_blur  = true,
     },
   },
@@ -59,11 +59,14 @@ Fade and enable settings apply on every frame, so reloading the config takes eff
 | `focus_lost_delay_ms`| `300`   | Wait after losing focus before the fade starts.             |
 | `fade_rate_percent_per_ms` | `0.1` | Percentage points of blur added per ms; must be positive. |
 | `blur_strength`      | `0.90`  | Final blur amount from `0` (clear) to `1` (full).           |
-| `suppress_on_hover`  | `true`  | Keep a window clear while the pointer is over it.           |
+| `suppress_on_hover`  | `false` | Also keep an inactive window clear while the pointer is over it. |
 | `ensure_global_blur` | `true`  | Turn on global blur after each config reload if it is off.                   |
 
 
 The blur itself comes from your normal `decoration.blur` settings; the strength above only decides how much of it shows through.
+
+By default, an inactive window can blur even if the pointer remains over it when another app gains focus.
+Set `suppress_on_hover = true` to restore the previous hover behavior.
 
 ## Automatically blur windows
 
