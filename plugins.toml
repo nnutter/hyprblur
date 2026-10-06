@@ -1,0 +1,6 @@
+[[plugins]]
+name     = "hyprblur"
+tagline  = "Fade unfocused windows into blur"
+url      = "https://github.com/nnutter/hyprblur"
+logo     = "/plugins-data/logos/hyprblur-logo.svg"
+category = "Quality of Life"

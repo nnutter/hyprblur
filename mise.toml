@@ -1,0 +1,110 @@
+[tools]
+cmake = "4"
+ninja = "1"
+"conda:clang-format" = "23"
+"conda:cppcheck" = "2"
+"pypi:cmakelang" = "0"
+
+[tasks.build]
+description = "Configure and build everything (plugin on Linux, core and tests everywhere)"
+run = """
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake --build build
+"""
+
+[tasks.test]
+description = "Build the project and run the unit tests"
+depends = "build"
+run = "ctest --test-dir build --output-on-failure"
+
+[tasks.format]
+description = "Reformat tracked C++ and CMake sources in place"
+run = """
+set -eu
+cxx_files=$(git ls-files --cached --others --exclude-standard -- '*.cpp' '*.hpp' 2>/dev/null || true)
+if [ -n "$cxx_files" ]; then
+  # shellcheck disable=SC2086
+  clang-format -i $cxx_files
+else
+  echo "format: no C++ files tracked, skipping clang-format"
+fi
+cmake_files=$(git ls-files --cached --others --exclude-standard -- 'CMakeLists.txt' '*.cmake' 2>/dev/null || true)
+if [ -n "$cmake_files" ]; then
+  # shellcheck disable=SC2086
+  cmake-format -i $cmake_files
+else
+  echo "format: no CMake files tracked, skipping cmake-format"
+fi
+"""
+
+[tasks.format-check]
+description = "Fail if any tracked C++ or CMake source needs reformatting"
+run = """
+set -eu
+failed=0
+cxx_files=$(git ls-files --cached --others --exclude-standard -- '*.cpp' '*.hpp' 2>/dev/null || true)
+if [ -n "$cxx_files" ]; then
+  # shellcheck disable=SC2086
+  clang-format --dry-run --Werror $cxx_files || failed=1
+else
+  echo "format-check: no C++ files tracked, skipping clang-format"
+fi
+cmake_files=$(git ls-files --cached --others --exclude-standard -- 'CMakeLists.txt' '*.cmake' 2>/dev/null || true)
+if [ -n "$cmake_files" ]; then
+  # shellcheck disable=SC2086
+  cmake-format --check $cmake_files || failed=1
+else
+  echo "format-check: no CMake files tracked, skipping cmake-format"
+fi
+exit "$failed"
+"""
+
+[tasks.lint]
+description = "Run static analysis: cppcheck on all sources, clang-tidy on src/ when available"
+depends = "build"
+run = """
+set -eu
+cxx_files=$(git ls-files --cached --others --exclude-standard -- '*.cpp' '*.hpp' 2>/dev/null || true)
+if [ -z "$cxx_files" ]; then
+  echo "lint: no C++ files tracked, nothing to check"
+  exit 0
+fi
+# shellcheck disable=SC2086
+cppcheck --enable=warning,performance,portability --std=c++23 --error-exitcode=1 --quiet --force --inline-suppr $cxx_files
+src_files=$(git ls-files --cached --others --exclude-standard -- 'src/*.cpp' 'src/*.hpp' 2>/dev/null || true)
+if [ -z "$src_files" ]; then
+  echo "lint: no src/ files tracked, skipping clang-tidy"
+  exit 0
+fi
+if command -v clang-tidy >/dev/null 2>&1; then
+  # shellcheck disable=SC2086
+  clang-tidy -p build $src_files
+else
+  echo "lint: clang-tidy not found on PATH, skipping (install LLVM to enable)"
+fi
+"""
+
+[tasks.install]
+description = "Build and load a fresh local plugin copy"
+depends = "build"
+run = "sh tools/plugin-local.sh load"
+
+[tasks.uninstall]
+description = "Unload the plugin from the running compositor"
+run = "sh tools/plugin-local.sh unload"
+
+[tasks.reload]
+description = "Rebuild and replace the locally loaded plugin"
+depends = ["install"]
+
+[tasks.status]
+description = "Show whether the plugin is loaded in the running compositor"
+run = "sh tools/plugin-local.sh status"
+
+[tasks.logs]
+description = "Follow the running compositor log (Ctrl-C to stop)"
+run = "sh tools/plugin-local.sh logs"
+
+[tasks.on-stop]
+description = "Entry point for the mise-hooks extension: format check, static analysis, and tests"
+depends = ["format-check", "lint", "test"]
