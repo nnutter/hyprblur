@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  formatting:
+    name: Formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Install mise tools
+        uses: jdx/mise-action@v5
+      - name: Check C++ and CMake formatting
+        run: mise run format-check
+
+  build-and-test:
+    name: Build plugin and run tests
+    runs-on: ubuntu-latest
+    container: archlinux:base
+    timeout-minutes: 20
+    steps:
+      # Install git before checkout so the action can use it in the container.
+      - name: Install compiler, Hyprland headers, and build dependencies
+        run: pacman -Syu --noconfirm --needed base-devel git cmake ninja pkgconf hyprland glaze catch2
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Require Hyprland development files
+        run: pkg-config --exists hyprland
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DHYPRBLUR_BUILD_TESTS=ON -DHYPRBLUR_WARNINGS_AS_ERRORS=ON
+      - name: Build plugin and tests
+        run: cmake --build build
+      - name: Require plugin output
+        run: test -s build/hyprblur.so
+      - name: Run unit tests
+        run: ctest --test-dir build --output-on-failure --no-tests=error

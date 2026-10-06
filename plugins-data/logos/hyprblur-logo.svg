@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Hyprblur</title>
+  <desc id="desc">A crisp cyan window in front of a blue window fading into blur.</desc>
+  <defs>
+    <linearGradient id="edge" x1="56" y1="72" x2="184" y2="200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00f0df"/>
+      <stop offset="0.5" stop-color="#00c8ff"/>
+      <stop offset="1" stop-color="#2455ff"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="68" y1="88" x2="180" y2="192" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00cadb" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#1645d9" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="light" x1="74" y1="122" x2="158" y2="166" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b4fff5"/>
+      <stop offset="1" stop-color="#43baff"/>
+    </linearGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="11"/>
+    </filter>
+  </defs>
+  <!-- The rear window has the same features, softened together by blur. -->
+  <g transform="translate(48 -40)">
+    <g filter="url(#blur)">
+      <rect x="48" y="88" width="136" height="112" rx="22" fill="#071c35"/>
+      <rect x="48" y="88" width="136" height="112" rx="22" fill="url(#glass)" stroke="url(#edge)" stroke-width="8"/>
+      <path d="M53 116h126" stroke="url(#edge)" stroke-width="5"/>
+      <g fill="#a0fff4">
+        <circle cx="68" cy="103" r="3"/>
+        <circle cx="80" cy="103" r="3" opacity="0.75"/>
+        <circle cx="92" cy="103" r="3" opacity="0.5"/>
+      </g>
+      <path d="M74 142h70m-70 24h44" stroke="url(#light)" stroke-width="8" stroke-linecap="round"/>
+    </g>
+  </g>
+  <!-- A restrained halo echoes the directory's luminous icon treatment. -->
+  <rect x="48" y="88" width="136" height="112" rx="22" fill="none" stroke="url(#edge)" stroke-width="10" opacity="0.4" filter="url(#glow)"/>
+  <rect x="48" y="88" width="136" height="112" rx="22" fill="#071c35"/>
+  <rect x="48" y="88" width="136" height="112" rx="22" fill="url(#glass)" stroke="url(#edge)" stroke-width="8"/>
+  <path d="M53 116h126" stroke="url(#edge)" stroke-width="5"/>
+  <g fill="#a0fff4">
+    <circle cx="68" cy="103" r="3"/>
+    <circle cx="80" cy="103" r="3" opacity="0.75"/>
+    <circle cx="92" cy="103" r="3" opacity="0.5"/>
+  </g>
+  <path d="M74 142h70m-70 24h44" stroke="url(#light)" stroke-width="8" stroke-linecap="round"/>
+</svg>

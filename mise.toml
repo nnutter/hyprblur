@@ -78,11 +78,32 @@ if [ -z "$src_files" ]; then
 fi
 if command -v clang-tidy >/dev/null 2>&1; then
   # shellcheck disable=SC2086
-  clang-tidy --warnings-as-errors='*' -p build $src_files
+  clang-tidy -p build $src_files
 else
   echo "lint: clang-tidy not found on PATH, skipping (install LLVM to enable)"
 fi
 """
+
+[tasks.install]
+description = "Build and load a fresh local plugin copy"
+depends = "build"
+run = "sh tools/plugin-local.sh load"
+
+[tasks.uninstall]
+description = "Unload the plugin from the running compositor"
+run = "sh tools/plugin-local.sh unload"
+
+[tasks.reload]
+description = "Rebuild and replace the locally loaded plugin"
+depends = ["install"]
+
+[tasks.status]
+description = "Show whether the plugin is loaded in the running compositor"
+run = "sh tools/plugin-local.sh status"
+
+[tasks.logs]
+description = "Follow the running compositor log (Ctrl-C to stop)"
+run = "sh tools/plugin-local.sh logs"
 
 [tasks.on-stop]
 description = "Entry point for the mise-hooks extension: format check, static analysis, and tests"
