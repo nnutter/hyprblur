@@ -16,6 +16,7 @@
 #include <string_view>
 #include <vector>
 
+#include "../window_rules.hpp"
 #include "globals.hpp"
 #include "tracker.hpp"
 #include "BlurDeco.hpp"
@@ -62,6 +63,23 @@ bool pluginEnabled() {
 
 bool blurByDefault() {
     return g_pGlobalState->config.blurByDefault->value();
+}
+
+bool initialBlurFor(PHLWINDOW window) {
+    try {
+        return HyprBlur::initiallyBlurred(blurByDefault(), g_pGlobalState->config.blurClass->value(), g_pGlobalState->config.blurTitle->value(), window->fetchClass(),
+                                          window->fetchTitle());
+    } catch (const std::regex_error& error) {
+        Log::logger->log(Log::WARN, "[hyprblur] invalid window rule: {}", error.what());
+        return blurByDefault();
+    }
+}
+
+static std::expected<void, std::string> validateWindowRule(const std::string& pattern) {
+    try {
+        (void)std::regex{pattern};
+        return {};
+    } catch (const std::regex_error& error) { return std::unexpected(std::format("invalid window rule regex: {}", error.what())); }
 }
 
 bool suppressOnHover() {
@@ -167,6 +185,10 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     g_pGlobalState->config.enabled = Hyprutils::Memory::makeShared<Config::Values::CBoolValue>("plugin:hyprblur:enabled", "Blur windows after they lose focus", true);
     g_pGlobalState->config.blurByDefault =
         Hyprutils::Memory::makeShared<Config::Values::CBoolValue>("plugin:hyprblur:blur_by_default", "Blur newly opened windows once they lose focus", false);
+    g_pGlobalState->config.blurClass = Hyprutils::Memory::makeShared<Config::Values::CStringValue>(
+        "plugin:hyprblur:blur_class", "Initially blur windows whose app class matches this regex", "", Config::Values::SStringValueOptions{.validator = validateWindowRule});
+    g_pGlobalState->config.blurTitle = Hyprutils::Memory::makeShared<Config::Values::CStringValue>(
+        "plugin:hyprblur:blur_title", "Initially blur windows whose title matches this regex", "", Config::Values::SStringValueOptions{.validator = validateWindowRule});
     g_pGlobalState->config.suppressOnHover =
         Hyprutils::Memory::makeShared<Config::Values::CBoolValue>("plugin:hyprblur:suppress_on_hover", "Keep a window clear while the pointer hovers over it", true);
     g_pGlobalState->config.ensureGlobalBlur =
@@ -181,6 +203,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.enabled);
     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.blurByDefault);
+    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.blurClass);
+    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.blurTitle);
     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.suppressOnHover);
     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.ensureGlobalBlur);
     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.focusLostDelayMs);
@@ -241,17 +265,17 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         return SDispatchResult{};
     });
 
-    for (const auto& w : Desktop::windowState()->windows()) {
-        if (w->isHidden() || !Desktop::View::validMapped(w))
-            continue;
-
-        onNewWindow(w);
-    }
-
     // Apply after every reload so desktop defaults cannot silently disable
     // plugin blur. Users can opt out with ensure_global_blur=false; runtime
     // changes are left alone until the next config reload.
     g_pGlobalState->listeners.push_back(Event::bus()->m_events.config.reloaded.listen([] {
+        // The loader reloads config after PLUGIN_INIT. Adopt existing windows
+        // only once settings are available; ensure() leaves tracked ones alone.
+        for (const auto& w : Desktop::windowState()->windows()) {
+            if (!w->isHidden() && Desktop::View::validMapped(w))
+                onNewWindow(w);
+        }
+
         if (!ensureGlobalBlur())
             return;
 
