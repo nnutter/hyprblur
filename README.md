@@ -18,7 +18,9 @@ hyprpm enable hyprblur
 Add this key binding to your Lua configuration after the plugin loads to toggle blurring for the focused window:
 
 ```lua
-hl.bind("SUPER + B", hl.plugin.hyprblur.toggle)
+if hl.plugin and hl.plugin.hyprblur and hl.plugin.hyprblur.toggle then
+  hl.bind("SUPER + B", hl.plugin.hyprblur.toggle)
+end
 ```
 
 ## Lua Config
@@ -31,6 +33,8 @@ hl.config({
     hyprblur = {
       enabled             = true,
       blur_by_default     = false,
+      blur_class          = "",
+      blur_title          = "",
       focus_lost_delay_ms = 300,
       fade_rate_percent_per_ms = 0.1,
       blur_strength       = 0.90,
@@ -42,13 +46,16 @@ hl.config({
 ```
 
 All settings live under `plugin.hyprblur` in your Lua configuration.
-They apply on every frame, so reloading the config takes effect at once.
+Fade and enable settings apply on every frame, so reloading the config takes effect at once.
+`blur_by_default`, `blur_class`, and `blur_title` set the initial blur state only when a window is first tracked.
 
 
 | Setting              | Default | Meaning                                                     |
 | -------------------- | ------- | ----------------------------------------------------------- |
 | `enabled`            | `true`  | Master switch for the whole plugin.                         |
 | `blur_by_default`    | `false` | New windows blur once they lose focus.                      |
+| `blur_class`         | `""`    | Initially enable blur for matching app classes.             |
+| `blur_title`         | `""`    | Initially enable blur for matching window titles.           |
 | `focus_lost_delay_ms`| `300`   | Wait after losing focus before the fade starts.             |
 | `fade_rate_percent_per_ms` | `0.1` | Percentage points of blur added per ms; must be positive. |
 | `blur_strength`      | `0.90`  | Final blur amount from `0` (clear) to `1` (full).           |
@@ -57,6 +64,32 @@ They apply on every frame, so reloading the config takes effect at once.
 
 
 The blur itself comes from your normal `decoration.blur` settings; the strength above only decides how much of it shows through.
+
+## Automatically blur windows
+
+hyprblur supports automatically enabling blue based on a window's app class or title by specifying a (ECMAScript) regular expression in `blur_class` or `blur_title`.
+Rules are evaluated only when a window is first tracked, including already-open windows after the plugin loads and its configuration is read.
+Pressing the toggle binding disables blur for that window until you toggle it again or close it.
+
+Prefer matching the app class if window titles can change dynamically based on state/content.
+
+### Example: Automatically blur Signal windows
+
+Run `hyprctl clients` to find Signal's `class`.
+
+Add configuration, similar to the following, after the plugin loads to opt Signal windows into blur without enabling it for other apps,
+
+```lua
+if hl.plugin and hl.plugin.hyprblur and hl.plugin.hyprblur.blue_class then
+  hl.config({
+    plugin = {
+      hyprblur = {
+        blur_class = "^(Signal|signal)$",
+      },
+    },
+  })
+end
+```
 
 ## Development
 
@@ -69,7 +102,7 @@ mise run lint          # static analysis (cppcheck, plus clang-tidy on src/)
 mise run on-stop       # everything above, for the mise-hooks extension
 ```
 
-## Trying it locally
+### Trying it locally
 
 ```
 mise run install       # build and load a fresh local copy
