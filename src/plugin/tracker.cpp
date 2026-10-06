@@ -29,7 +29,9 @@ CBlurTracker::SEntry& CBlurTracker::ensure(PHLWINDOW window) {
     if (auto* found = find(window))
         return *found;
 
-    m_entries.push_back(SEntry{.window = window, .fade = {}, .optedIn = blurByDefault()});
+    // Rules set the initial state only. Existing entries preserve manual
+    // toggles across focus changes, title changes, and config reloads.
+    m_entries.push_back(SEntry{.window = window, .fade = {}, .optedIn = initialBlurFor(window)});
     return m_entries.back();
 }
 

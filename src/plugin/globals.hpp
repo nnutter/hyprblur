@@ -3,6 +3,7 @@
 #include <hyprland/src/config/values/types/BoolValue.hpp>
 #include <hyprland/src/config/values/types/FloatValue.hpp>
 #include <hyprland/src/config/values/types/IntValue.hpp>
+#include <hyprland/src/config/values/types/StringValue.hpp>
 #include <hyprland/src/helpers/signal/Signal.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/managers/eventLoop/EventLoopTimer.hpp>
@@ -21,13 +22,15 @@ struct SGlobalState {
     SP<CEventLoopTimer>              timer;
 
     struct {
-        SP<Config::Values::CBoolValue>  enabled;
-        SP<Config::Values::CBoolValue>  blurByDefault;
-        SP<Config::Values::CBoolValue>  suppressOnHover;
-        SP<Config::Values::CBoolValue>  ensureGlobalBlur;
-        SP<Config::Values::CIntValue>   focusLostDelayMs;
-        SP<Config::Values::CFloatValue> fadeRatePercentPerMs;
-        SP<Config::Values::CFloatValue> blurStrength;
+        SP<Config::Values::CBoolValue>   enabled;
+        SP<Config::Values::CBoolValue>   blurByDefault;
+        SP<Config::Values::CStringValue> blurClass;
+        SP<Config::Values::CStringValue> blurTitle;
+        SP<Config::Values::CBoolValue>   suppressOnHover;
+        SP<Config::Values::CBoolValue>   ensureGlobalBlur;
+        SP<Config::Values::CIntValue>    focusLostDelayMs;
+        SP<Config::Values::CFloatValue>  fadeRatePercentPerMs;
+        SP<Config::Values::CFloatValue>  blurStrength;
     } config;
 };
 
@@ -38,5 +41,6 @@ inline UP<SGlobalState> g_pGlobalState;
 HyprBlur::SFadeSettings currentFadeSettings();
 bool                    pluginEnabled();
 bool                    blurByDefault();
+bool                    initialBlurFor(PHLWINDOW window);
 bool                    suppressOnHover();
 bool                    ensureGlobalBlur();
