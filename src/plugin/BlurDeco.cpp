@@ -83,7 +83,6 @@ CBox CBlurDeco::windowBoxOnMonitor(PHLMONITOR monitor) {
 
     CBox box = window->getWindowMainSurfaceBox();
     box.translate(-monitor->m_position);
-    box.scale(monitor->m_scale).round();
     return box;
 }
 
@@ -98,7 +97,8 @@ void CBlurDeco::renderPass(PHLMONITOR monitor, float amount) {
     if (!*PENABLEBLURGLOBAL)
         return;
 
-    CBox box = windowBoxOnMonitor(monitor);
+    // Pass bounds use logical coordinates, but OpenGL draws physical pixels.
+    CBox box = windowBoxOnMonitor(monitor).scale(monitor->m_scale).round();
     if (box.w < 1 || box.h < 1)
         return;
 
